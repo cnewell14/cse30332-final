@@ -3,12 +3,20 @@
 import pygame
 import math
 
+class Background:
+    def __init__(self):
+        self.image = pygame.image.load("graphics/background.png")
+        self.rect = self.image.get_rect()
+
 class GameSpace:
     def main(self):
         pygame.init()
         self.size = self.width,self.height = 640,480
         self.black = 0,0,0
         self.screen = pygame.display.set_mode(self.size)
+
+        #image classes
+        self.bg = Background()
 
         while_loop = 1
         self.clock = pygame.time.Clock()
@@ -22,6 +30,7 @@ class GameSpace:
                     break
 
             self.screen.fill(self.black)
+            self.screen.blit(self.bg.image, self.bg.rect)
 
             pygame.display.flip()
 
