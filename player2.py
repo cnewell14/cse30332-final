@@ -30,16 +30,9 @@ class Player:
 
     #def get_player_score(self):
 
-class Player2:
-    def __init__(self,image_file):
-        self.image = pygame.image.load(image_file)
-        self.image = pygame.transform.scale(self.image, (64,48))
-        self.rect = self.image.get_rect()
-        self.score = 0
-
 
 class Rupee:
-    def __init__(self,Gs, Player,):
+    def __init__(self,Gs, Player):
         self.image = pygame.image.load("graphics/rupee.png")
         self.image = pygame.transform.scale(self.image, (32, 24))
         self.rect = self.image.get_rect()
@@ -61,7 +54,7 @@ class Rupee:
         if self.rect.colliderect(self.player.rect):
             self.rupee_pos()
             self.player.score += 1
-            self.gs.Words = "SCORE     PLAYER1: " + str(self.player.score) + "     PLAYER2: " + str()
+            self.gs.Words = "SCORE     PLAYER1: " + str(0) + "     PLAYER2: " + str(self.player.score)
             self.gs.label = self.gs.myfont.render(self.gs.Words,1,(0,0,0))
 
     def tick(self):
@@ -81,7 +74,7 @@ class GameSpace:
         #image classes
         self.bg = Background()
         
-        self.link = Player("graphics/link.png")
+        self.link = Player("graphics/kirby.png")
         self.link.rect.centerx = 320
         self.link.rect.centery = 420
 
