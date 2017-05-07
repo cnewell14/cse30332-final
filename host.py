@@ -3,6 +3,11 @@
 import pygame
 import math
 import random
+from twisted.internet.protocol import Factory
+from twisted.internet.protocol import Protocol
+from twisted.internet import reactor
+from twisted.internet.defer import DeferredQueue
+import sys
 
 class Background:
     def __init__(self):
@@ -28,18 +33,9 @@ class Player:
         elif key[pygame.K_DOWN]:
             self.rect.centery += 10
 
-    #def get_player_score(self):
-
-class Player2:
-    def __init__(self,image_file):
-        self.image = pygame.image.load(image_file)
-        self.image = pygame.transform.scale(self.image, (64,48))
-        self.rect = self.image.get_rect()
-        self.score = 0
-
 
 class Rupee:
-    def __init__(self,Gs, Player,):
+    def __init__(self,Gs, Player):
         self.image = pygame.image.load("graphics/rupee.png")
         self.image = pygame.transform.scale(self.image, (32, 24))
         self.rect = self.image.get_rect()
@@ -67,8 +63,24 @@ class Rupee:
     def tick(self):
         self.found()
 
+class DataConnectionFactory(Factory):
+    def __init__(self):
+        self.myconn = Data()
+
+    def buildProtocol(self,addr):
+        return self.myconn
+
+class Data(Protocol):
+    def connectionMade(self):
+        print ("Connection Made")
+
 class GameSpace:
     def main(self):
+        #Connection
+        reactor.listenTCP(40080, DataConnectionFactory())
+        reactor.run()
+
+        #Game and Graphics
         pygame.init()
         self.myfont = pygame.font.SysFont(None, 30)
         self.myfont.set_bold(True)
@@ -111,11 +123,6 @@ class GameSpace:
             self.screen.blit(self.link.image, self.link.rect)
             self.screen.blit(self.label, (0,0))
 
-            '''if time_counter > 1000:
-                self.rupee1.rect.x, self.rupee1.rect.y = self.rupee1.return_rupee_pos()
-                self.rupee2.rect.x, self.rupee2.rect.y = self.rupee2.return_rupee_pos()
-                time_counter = 0
-            '''
             pygame.display.flip()
 
 if __name__ == "__main__":

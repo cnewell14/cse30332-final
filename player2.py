@@ -60,8 +60,30 @@ class Rupee:
     def tick(self):
         self.found()
 
+class DataConnectionFactory(ClientFactory):
+    def __init__(self):
+        self.myconn = Data()
+
+    def buildProtocol(self,addr):
+        return self.myconn
+
+class Data(Protocol):
+    def dataRecived(self,data):
+        print (data)
+
+    def connectionMade(self):
+        print("Connection Made")
+
+    def forwardData(self,data):
+        self.transport.write(data)
+
 class GameSpace:
     def main(self):
+        #Connection
+        reactor.connectTCP("ash.campus.nd.edu","40080", CommandConnectionFactory())
+        reactor.run()
+
+        #Game and Graphics
         pygame.init()
         self.myfont = pygame.font.SysFont(None, 30)
         self.myfont.set_bold(True)
