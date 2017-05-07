@@ -1,13 +1,18 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2.7
 
 import pygame
 import math
 import random
 from twisted.internet.protocol import Factory
+from twisted.internet.protocol import Factory
 from twisted.internet.protocol import Protocol
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredQueue
+from twisted.internet.task import LoopingCall
+from twisted.python import log
 import sys
+import json
+import time
 
 class Background:
     def __init__(self):
@@ -64,24 +69,45 @@ class Rupee:
         self.found()
 
 class DataConnectionFactory(Factory):
-    def __init__(self):
-        self.myconn = Data()
+    def __init__(self, GS):
+        #self.myconn = Data(GS)
+        self.GS = GS
 
     def buildProtocol(self,addr):
-        return self.myconn
+        #return self.myconn
+        myconn = Data(self.GS)
+        self.GS.forwardData = myconn.forwardData
+        return myconn
+
 
 class Data(Protocol):
+    def __init__(self, GS):
+        self.GS = GS
+        self.connected = 0
+        self.queue = []
+
     def connectionMade(self):
         print ("Connection Made")
+        self.connected = 1
+
+    def dataReceived(self, data):
+        main_data = data.split("|")
+        kirby_data = main_data[0]
+        kirby = kirby_data.split(" ")
+        self.GS.kirby.rect.centerx = int(kirby[1])
+        self.GS.kirby.rect.centery = int(kirby[3])
+        #print (data)
+
+    def forwardData(self, data):
+        if self.connected == 1:
+            self.transport.write(data)
+
 
 class GameSpace:
-    def main(self):
-        #Connection
-        reactor.listenTCP(40080, DataConnectionFactory())
-        reactor.run()
-
-        #Game and Graphics
+    #Game and Graphics
+    def __init__(self):
         pygame.init()
+        log.startLogging(sys.stdout)
         self.myfont = pygame.font.SysFont(None, 30)
         self.myfont.set_bold(True)
         self.Words = "SCORE     PLAYER1: 0     PLAYER2: 0"
@@ -97,34 +123,50 @@ class GameSpace:
         self.link.rect.centerx = 320
         self.link.rect.centery = 420
 
+        self.kirby = Player("graphics/kirby.png")
+        self.kirby.rect.centerx = 320
+        self.kirby.rect.centery = 60
+
         self.rupee1 = Rupee(self, self.link)
         self.rupee2 = Rupee(self, self.link)
 
-        while_loop = 1
         self.clock = pygame.time.Clock()
         pygame.key.set_repeat(1,1)
 
-        while while_loop:
-            time_counter = self.clock.tick(60)
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    while_loop = 0
-                    break
+    def gameplay(self):
+        
+        link_pos = "linkx " + str(self.link.rect.centerx) + " linky " + str(self.link.rect.centery)
+        #kirby_pos = " kirbyx " + str(self.kirby.rect.centerx) + " kirby " + str(self.kirby.rect.centery) + "|"
+        #data = link_pos + kirby_pos
+        self.forwardData(link_pos)
+        time_counter = self.clock.tick(60)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                reactor.stop()
+                break
 
-            self.link.move()
+        self.link.move()
 
-            self.rupee1.tick()
-            self.rupee2.tick()
+        self.rupee1.tick()
+        self.rupee2.tick()
 
-            self.screen.fill(self.black)
-            self.screen.blit(self.bg.image, self.bg.rect)
-            self.screen.blit(self.rupee1.image, self.rupee1.rect)
-            self.screen.blit(self.rupee2.image, self.rupee2.rect)
-            self.screen.blit(self.link.image, self.link.rect)
-            self.screen.blit(self.label, (0,0))
+        self.screen.fill(self.black)
+        self.screen.blit(self.bg.image, self.bg.rect)
+        self.screen.blit(self.rupee1.image, self.rupee1.rect)
+        self.screen.blit(self.rupee2.image, self.rupee2.rect)
+        self.screen.blit(self.link.image, self.link.rect)
+        self.screen.blit(self.kirby.image, self.kirby.rect)
+        self.screen.blit(self.label, (0,0))
 
-            pygame.display.flip()
+        pygame.display.flip()
+
+    def forwardData(self, data):
+        pass
 
 if __name__ == "__main__":
     gs = GameSpace()
-    gs.main()
+    loop = LoopingCall(gs.gameplay)
+    loop.start(1/60)
+    reactor.listenTCP(40080, DataConnectionFactory(gs))
+    reactor.run()
+    loop.stop()

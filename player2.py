@@ -1,8 +1,16 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2.7
 
 import pygame
 import math
 import random
+from twisted.internet.protocol import ClientFactory
+from twisted.internet.protocol import Protocol
+from twisted.internet import reactor
+from twisted.internet.defer import DeferredQueue
+from twisted.internet.task import LoopingCall
+from twisted.python import log
+import sys
+import json
 
 class Background:
     def __init__(self):
@@ -27,8 +35,6 @@ class Player:
             self.rect.centery -= 10
         elif key[pygame.K_DOWN]:
             self.rect.centery += 10
-
-    #def get_player_score(self):
 
 
 class Rupee:
@@ -61,15 +67,22 @@ class Rupee:
         self.found()
 
 class DataConnectionFactory(ClientFactory):
-    def __init__(self):
-        self.myconn = Data()
+    def __init__(self, GS):
+        self.GS = GS
 
     def buildProtocol(self,addr):
-        return self.myconn
+        myconn = Data(self.GS)
+        self.GS.forwardData = myconn.forwardData
+        return myconn
 
 class Data(Protocol):
-    def dataRecived(self,data):
-        print (data)
+    def __init__(self, GS):
+        self.GS = GS
+        self.queue = []
+
+    def dataReceived(self,data):
+        #print (data)
+        pass
 
     def connectionMade(self):
         print("Connection Made")
@@ -78,13 +91,10 @@ class Data(Protocol):
         self.transport.write(data)
 
 class GameSpace:
-    def main(self):
-        #Connection
-        reactor.connectTCP("ash.campus.nd.edu","40080", CommandConnectionFactory())
-        reactor.run()
-
+    def __init__(self):
         #Game and Graphics
         pygame.init()
+        log.startLogging(sys.stdout)
         self.myfont = pygame.font.SysFont(None, 30)
         self.myfont.set_bold(True)
         self.Words = "SCORE     PLAYER1: 0     PLAYER2: 0"
@@ -96,25 +106,33 @@ class GameSpace:
         #image classes
         self.bg = Background()
         
-        self.link = Player("graphics/kirby.png")
+        self.link = Player("graphics/link.png")
         self.link.rect.centerx = 320
         self.link.rect.centery = 420
+
+        self.kirby = Player("graphics/kirby.png")
+        self.kirby.rect.centerx = 320
+        self.kirby.rect.centery = 60
 
         self.rupee1 = Rupee(self, self.link)
         self.rupee2 = Rupee(self, self.link)
 
-        while_loop = 1
         self.clock = pygame.time.Clock()
         pygame.key.set_repeat(1,1)
 
-        while while_loop:
+    def gameplay(self):
+            #link_pos = "linkx " + str(self.link.rect.centerx) + " linky " + str(self.link.rect.centery)
+            kirby_pos = "kirbyx " + str(self.kirby.rect.centerx) + " kirbyy " + str(self.kirby.rect.centery) + "|"
+            #data = link_pos + kirby_pos
+            self.forwardData(kirby_pos)
             time_counter = self.clock.tick(60)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    reactor.stop()
                     while_loop = 0
                     break
-
-            self.link.move()
+            
+            self.kirby.move()
 
             self.rupee1.tick()
             self.rupee2.tick()
@@ -124,15 +142,18 @@ class GameSpace:
             self.screen.blit(self.rupee1.image, self.rupee1.rect)
             self.screen.blit(self.rupee2.image, self.rupee2.rect)
             self.screen.blit(self.link.image, self.link.rect)
+            self.screen.blit(self.kirby.image, self.kirby.rect)
             self.screen.blit(self.label, (0,0))
 
-            '''if time_counter > 1000:
-                self.rupee1.rect.x, self.rupee1.rect.y = self.rupee1.return_rupee_pos()
-                self.rupee2.rect.x, self.rupee2.rect.y = self.rupee2.return_rupee_pos()
-                time_counter = 0
-            '''
             pygame.display.flip()
+
+    def forwardData(self, data):
+        pass
 
 if __name__ == "__main__":
     gs = GameSpace()
-    gs.main()
+    loop = LoopingCall(gs.gameplay)
+    loop.start(1/60)
+    reactor.connectTCP("ash.campus.nd.edu", 40080, DataConnectionFactory(gs))
+    reactor.run()
+    loop.stop()
