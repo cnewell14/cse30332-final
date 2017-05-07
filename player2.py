@@ -38,11 +38,12 @@ class Player:
 
 
 class Rupee:
-    def __init__(self,Gs, Player):
+    def __init__(self,Gs, Player1, Player2):
         self.image = pygame.image.load("graphics/rupee.png")
         self.image = pygame.transform.scale(self.image, (32, 24))
         self.rect = self.image.get_rect()
-        self.player = Player
+        self.player1 = Player1
+        self.player2 = Player2
         self.gs = Gs
         self.rupee_pos()
 
@@ -57,11 +58,19 @@ class Rupee:
         self.rect.centery = y
 
     def found(self):
-        if self.rect.colliderect(self.player.rect):
+        if self.rect.colliderect(self.player1.rect):
             self.rupee_pos()
-            self.player.score += 1
-            self.gs.Words = "SCORE     PLAYER1: " + str(0) + "     PLAYER2: " + str(self.player.score)
+            self.player1.score += 1
+            self.gs.Words = "SCORE     PLAYER1: " + str(self.player1.score) + "     PLAYER2: " + str(self.player2.score)
             self.gs.label = self.gs.myfont.render(self.gs.Words,1,(0,0,0))
+            return
+
+        elif self.rect.colliderect(self.player2.rect):
+            self.rupee_pos()
+            self.player2.score += 1
+            self.gs.Words = "SCORE     PLAYER1: " + str(self.player1.score) + "     PLAYER2: " + str(self.player2.score)
+            self.gs.label = self.gs.myfont.render(self.gs.Words,1,(0,0,0))
+            return
 
     def tick(self):
         self.found()
@@ -78,14 +87,22 @@ class DataConnectionFactory(ClientFactory):
 class Data(Protocol):
     def __init__(self, GS):
         self.GS = GS
-        self.queue = []
+        self.connected = 0
 
     def dataReceived(self,data):
-        #print (data)
-        pass
+        if self.connected == 1:
+            main_data = data.split("|")
+            link_data = main_data[0]
+            link = link_data.split(" ")
+            self.GS.link.rect.centerx = int(link[0])
+            self.GS.link.rect.centery = int(link[1])
+            self.GS.link.score = int(link[6])
 
     def connectionMade(self):
         print("Connection Made")
+        self.connected = 1
+        self.GS.waitingWords = ""
+        self.GS.waitingLabel = self.GS.myfont.render(self.GS.waitingWords,1,(0,0,0))
 
     def forwardData(self,data):
         self.transport.write(data)
@@ -98,7 +115,9 @@ class GameSpace:
         self.myfont = pygame.font.SysFont(None, 30)
         self.myfont.set_bold(True)
         self.Words = "SCORE     PLAYER1: 0     PLAYER2: 0"
+        self.waitingWords = "WAITING FOR CONNECTION!"
         self.label = self.myfont.render(self.Words,1,(0,0,0))
+        self.waitingLabel = self.myfont.render(self.waitingWords,1,(0,0,0))
         self.size = self.width,self.height = 640,480
         self.black = 0,0,0
         self.screen = pygame.display.set_mode(self.size)
@@ -114,17 +133,20 @@ class GameSpace:
         self.kirby.rect.centerx = 320
         self.kirby.rect.centery = 60
 
-        self.rupee1 = Rupee(self, self.link)
-        self.rupee2 = Rupee(self, self.link)
+        self.rupee1 = Rupee(self, self.link, self.kirby)
+        self.rupee2 = Rupee(self, self.link, self.kirby)
 
         self.clock = pygame.time.Clock()
         pygame.key.set_repeat(1,1)
 
     def gameplay(self):
-            #link_pos = "linkx " + str(self.link.rect.centerx) + " linky " + str(self.link.rect.centery)
-            kirby_pos = "kirbyx " + str(self.kirby.rect.centerx) + " kirbyy " + str(self.kirby.rect.centery) + "|"
-            #data = link_pos + kirby_pos
-            self.forwardData(kirby_pos)
+            kirby_pos = str(self.kirby.rect.centerx) + " " + str(self.kirby.rect.centery)
+            rupee1_pos = str(self.rupee1.rect.centerx) + " " + str(self.rupee1.rect.centery)
+            rupee2_pos = str(self.rupee2.rect.centerx) + " " + str(self.rupee2.rect.centery)
+            score_player2 = str(self.kirby.score)
+            data = kirby_pos + " " + rupee1_pos + " " + rupee2_pos + " " + score_player2 + "|"
+            self.forwardData(data)
+
             time_counter = self.clock.tick(60)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -144,6 +166,7 @@ class GameSpace:
             self.screen.blit(self.link.image, self.link.rect)
             self.screen.blit(self.kirby.image, self.kirby.rect)
             self.screen.blit(self.label, (0,0))
+            self.screen.blit(self.waitingLabel, (100, 230))
 
             pygame.display.flip()
 
