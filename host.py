@@ -96,8 +96,10 @@ class Data(Protocol):
     def connectionMade(self):
         print ("Connection Made")
         self.connected = 1
+        self.GS.players_connected = 1
         self.GS.waitingWords = ""
         self.GS.waitingLabel = self.GS.myfont.render(self.GS.waitingWords,1,(0,0,0))
+        self.transport.write("Go!|")
 
     def dataReceived(self, data):
         main_data = data.split("|")
@@ -130,6 +132,7 @@ class GameSpace:
         self.size = self.width,self.height = 640,480
         self.black = 0,0,0
         self.screen = pygame.display.set_mode(self.size)
+        self.players_connected = 0
 
         #image classes
         self.bg = Background()
@@ -163,21 +166,29 @@ class GameSpace:
                 reactor.stop()
                 break
 
-        self.link.move()
-
-        self.rupee1.tick()
-        self.rupee2.tick()
-
         self.screen.fill(self.black)
         self.screen.blit(self.bg.image, self.bg.rect)
-        self.screen.blit(self.rupee1.image, self.rupee1.rect)
-        self.screen.blit(self.rupee2.image, self.rupee2.rect)
-        self.screen.blit(self.link.image, self.link.rect)
-        self.screen.blit(self.kirby.image, self.kirby.rect)
-        self.screen.blit(self.label, (0,0))
-        self.screen.blit(self.waitingLabel, (100,230))
+        self.screen.blit(self.waitingLabel, (100, 230))
+        
+        if self.players_connected == 1:
+            self.link.move()
 
-        pygame.display.flip()
+            self.rupee1.tick()
+            self.rupee2.tick()
+
+            #self.screen.fill(self.black)
+            #self.screen.blit(self.bg.image, self.bg.rect)
+            self.screen.blit(self.rupee1.image, self.rupee1.rect)
+            self.screen.blit(self.rupee2.image, self.rupee2.rect)
+            self.screen.blit(self.link.image, self.link.rect)
+            self.screen.blit(self.kirby.image, self.kirby.rect)
+        
+            self.Words = "SCORE     PLAYER1: " + str(self.link.score) + "     PLAYER2: " + str(self.kirby.score)
+            self.label = self.myfont.render(self.Words,1,(0,0,0))
+            self.screen.blit(self.label, (0,0))
+            #self.screen.blit(self.waitingLabel, (100,230))
+
+            pygame.display.flip()
 
     def forwardData(self, data):
         pass

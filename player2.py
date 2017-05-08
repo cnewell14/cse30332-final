@@ -90,7 +90,11 @@ class Data(Protocol):
         self.connected = 0
 
     def dataReceived(self,data):
-        if self.connected == 1:
+        if data.split("|")[0] == "Go!":
+            self.connected == 1
+            self.GS.players_connected = 1
+
+        elif self.connected == 1:
             main_data = data.split("|")
             link_data = main_data[0]
             link = link_data.split(" ")
@@ -100,11 +104,11 @@ class Data(Protocol):
 
     def connectionMade(self):
         print("Connection Made")
-        self.connected = 1
-        self.GS.waitingWords = ""
-        self.GS.waitingLabel = self.GS.myfont.render(self.GS.waitingWords,1,(0,0,0))
 
     def forwardData(self,data):
+        if self.connected == 1:
+            self.GS.waitingWords = ""
+            self.GS.waitingLabel = self.GS.myfont.render(self.GS.waitingWords,1,(0,0,0))
         self.transport.write(data)
 
 class GameSpace:
@@ -121,6 +125,7 @@ class GameSpace:
         self.size = self.width,self.height = 640,480
         self.black = 0,0,0
         self.screen = pygame.display.set_mode(self.size)
+        self.players_connected = 0
 
         #image classes
         self.bg = Background()
@@ -153,22 +158,30 @@ class GameSpace:
                     reactor.stop()
                     while_loop = 0
                     break
-            
-            self.kirby.move()
-
-            self.rupee1.tick()
-            self.rupee2.tick()
 
             self.screen.fill(self.black)
             self.screen.blit(self.bg.image, self.bg.rect)
-            self.screen.blit(self.rupee1.image, self.rupee1.rect)
-            self.screen.blit(self.rupee2.image, self.rupee2.rect)
-            self.screen.blit(self.link.image, self.link.rect)
-            self.screen.blit(self.kirby.image, self.kirby.rect)
-            self.screen.blit(self.label, (0,0))
             self.screen.blit(self.waitingLabel, (100, 230))
+           
+            if self.players_connected == 1:
+                self.kirby.move()
 
-            pygame.display.flip()
+                self.rupee1.tick()
+                self.rupee2.tick()
+
+                #self.screen.fill(self.black)
+                #self.screen.blit(self.bg.image, self.bg.rect)
+                self.screen.blit(self.rupee1.image, self.rupee1.rect)
+                self.screen.blit(self.rupee2.image, self.rupee2.rect)
+                self.screen.blit(self.link.image, self.link.rect)
+                self.screen.blit(self.kirby.image, self.kirby.rect)
+
+                self.Words = "SCORE     PLAYER1: " + str(self.link.score) + "     PLAYER2: " + str(self.kirby.score)
+                self.label = self.myfont.render(self.Words,1,(0,0,0))
+                self.screen.blit(self.label, (0,0))
+                #self.screen.blit(self.waitingLabel, (100, 230))
+
+                pygame.display.flip()
 
     def forwardData(self, data):
         pass
