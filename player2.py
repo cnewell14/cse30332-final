@@ -28,13 +28,17 @@ class Player:
         key = pygame.key.get_pressed()
 
         if key[pygame.K_RIGHT]:
-            self.rect.centerx += 10
+            if self.rect.centerx + 10 <= 624:
+                self.rect.centerx += 10
         elif key[pygame.K_LEFT]:
-            self.rect.centerx -= 10
+            if self.rect.centerx - 10 >= 16:
+                self.rect.centerx -= 10
         elif key[pygame.K_UP]:
-            self.rect.centery -= 10
+            if self.rect.centery - 10 >= 12:
+                self.rect.centery -= 10
         elif key[pygame.K_DOWN]:
-            self.rect.centery += 10
+            if self.rect.centery + 10 <= 468:
+                self.rect.centery += 10
 
 
 class Rupee:
