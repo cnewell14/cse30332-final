@@ -72,6 +72,10 @@ class Rupee:
             self.player2.score += 1
             self.gs.Words = "SCORE     PLAYER1: " + str(self.player1.score) + "     PLAYER2: " + str(self.player2.score)
             self.gs.label = self.gs.myfont.render(self.gs.Words,1,(0,0,0))
+            if self.player2.score >= 20:
+                self.gs.waitingWords = "PLAYER 2 WINS\n GAME OVER"
+                self.gs.waitingLabel = self.gs.myfont.render(self.gs.waitingWords,1,(0,0,0))
+                #reactor.stop()
             return
         
     def tick(self):
@@ -107,11 +111,11 @@ class Data(Protocol):
         kirby = kirby_data.split(" ")
         self.GS.kirby.rect.centerx = int(kirby[0])
         self.GS.kirby.rect.centery = int(kirby[1])
-        self.GS.rupee1.rect.centerx = int(kirby[2])
-        self.GS.rupee1.rect.centery = int(kirby[3])
-        self.GS.rupee2.rect.centerx = int(kirby[4])
-        self.GS.rupee2.rect.centery = int(kirby[5])
-        self.GS.kirby.score = int(kirby[6])
+        #self.GS.rupee1.rect.centerx = int(kirby[2])
+        #self.GS.rupee1.rect.centery = int(kirby[3])
+        #self.GS.rupee2.rect.centerx = int(kirby[4])
+        #self.GS.rupee2.rect.centery = int(kirby[5])
+        #self.GS.kirby.score = int(kirby[6])
 
     def forwardData(self, data):
         if self.connected == 1:
@@ -157,7 +161,8 @@ class GameSpace:
         rupee1_pos = str(self.rupee1.rect.centerx) + " " + str(self.rupee1.rect.centery)
         rupee2_pos = str(self.rupee2.rect.centerx) + " " + str(self.rupee2.rect.centery)
         score_player1 = str(self.link.score)
-        data = link_pos + " " + rupee1_pos + " " + rupee2_pos + " " + score_player1 + "|"
+        score_player2 = str(self.kirby.score)
+        data = link_pos + " " + rupee1_pos + " " + rupee2_pos + " " + score_player1 + " " + score_player2 + "|"
         self.forwardData(data)
 
         time_counter = self.clock.tick(60)
