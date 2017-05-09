@@ -76,14 +76,22 @@ class Rupee:
             self.player2.score += 1
             self.gs.Words = "SCORE     PLAYER1: " + str(self.player1.score) + "     PLAYER2: " + str(self.player2.score)
             self.gs.label = self.gs.myfont.render(self.gs.Words,1,(0,0,0))
-            if self.player2.score >= 20:
-                self.gs.waitingWords = "PLAYER 2 WINS\n GAME OVER"
-                self.gs.waitingLabel = self.gs.myfont.render(self.gs.waitingWords,1,(0,0,0))
-                #reactor.stop()
             return
-        
+    
+    def GameOver(self):
+        if self.player1.score >= 3:
+            self.gs.gameOverWords = "PLAYER 1 Wins! Game Over"
+            self.gs.gameOverLabel = self.gs.myfont.render(self.gs.gameOverWords,1,(0,0,0))
+            self.gs.game_over = 1
+
+        elif self.player2.score >= 3:
+            self.gs.gameOverWords = "PLAYER 2 Wins! Game Over"
+            self.gs.gameOverLabel = self.gs.myfont.render(self.gs.gameOverWords,1,(0,0,0))
+            self.gs.game_over = 1
+
     def tick(self):
         self.found()
+        self.GameOver()
 
 class DataConnectionFactory(Factory):
     def __init__(self, GS):
@@ -107,6 +115,8 @@ class Data(Protocol):
         self.GS.players_connected = 1
         self.GS.waitingWords = ""
         self.GS.waitingLabel = self.GS.myfont.render(self.GS.waitingWords,1,(0,0,0))
+        self.GS.titleWords = ""
+        self.GS.titleLabel = self.GS.myfont.render(self.GS.titleWords,1,(0,0,0))
         self.transport.write("Go!|")
 
     def dataReceived(self, data):
@@ -115,11 +125,6 @@ class Data(Protocol):
         kirby = kirby_data.split(" ")
         self.GS.kirby.rect.centerx = int(kirby[0])
         self.GS.kirby.rect.centery = int(kirby[1])
-        #self.GS.rupee1.rect.centerx = int(kirby[2])
-        #self.GS.rupee1.rect.centery = int(kirby[3])
-        #self.GS.rupee2.rect.centerx = int(kirby[4])
-        #self.GS.rupee2.rect.centery = int(kirby[5])
-        #self.GS.kirby.score = int(kirby[6])
 
     def forwardData(self, data):
         if self.connected == 1:
@@ -133,14 +138,21 @@ class GameSpace:
         log.startLogging(sys.stdout)
         self.myfont = pygame.font.SysFont(None, 30)
         self.myfont.set_bold(True)
+
         self.Words = "SCORE     PLAYER1: 0     PLAYER2: 0"
         self.waitingWords = "WAITING FOR CONNECTION!"
+        self.gameOverWords = ""
+        self.titleWords = "Welcome to JewelHunt!"
         self.label = self.myfont.render(self.Words,1,(0,0,0))
         self.waitingLabel = self.myfont.render(self.waitingWords,1,(0,0,0))
+        self.gameOverLabel = self.myfont.render(self.gameOverWords,1,(0,0,0))
+        self.titleLabel = self.myfont.render(self.titleWords,1,(0,0,0))
+
         self.size = self.width,self.height = 640,480
         self.black = 0,0,0
         self.screen = pygame.display.set_mode(self.size)
         self.players_connected = 0
+        self.game_over = 0
 
         #image classes
         self.bg = Background()
@@ -178,15 +190,15 @@ class GameSpace:
         self.screen.fill(self.black)
         self.screen.blit(self.bg.image, self.bg.rect)
         self.screen.blit(self.waitingLabel, (100, 230))
-        
-        if self.players_connected == 1:
+        self.screen.blit(self.titleLabel, (100, 200))
+        self.screen.blit(self.gameOverLabel, (100, 230))
+
+        if self.players_connected == 1 and self.game_over == 0:
             self.link.move()
 
             self.rupee1.tick()
             self.rupee2.tick()
 
-            #self.screen.fill(self.black)
-            #self.screen.blit(self.bg.image, self.bg.rect)
             self.screen.blit(self.rupee1.image, self.rupee1.rect)
             self.screen.blit(self.rupee2.image, self.rupee2.rect)
             self.screen.blit(self.link.image, self.link.rect)
@@ -195,9 +207,8 @@ class GameSpace:
             self.Words = "SCORE     PLAYER1: " + str(self.link.score) + "     PLAYER2: " + str(self.kirby.score)
             self.label = self.myfont.render(self.Words,1,(0,0,0))
             self.screen.blit(self.label, (0,0))
-            #self.screen.blit(self.waitingLabel, (100,230))
 
-            pygame.display.flip()
+        pygame.display.flip()
 
     def forwardData(self, data):
         pass
@@ -205,7 +216,7 @@ class GameSpace:
 if __name__ == "__main__":
     gs = GameSpace()
     loop = LoopingCall(gs.gameplay)
-    loop.start(1/60)
+    loop.start(1/30)
     reactor.listenTCP(40080, DataConnectionFactory(gs))
     reactor.run()
     loop.stop()
