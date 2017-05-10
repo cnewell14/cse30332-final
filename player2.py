@@ -8,7 +8,6 @@ from twisted.internet.protocol import Protocol
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredQueue
 from twisted.internet.task import LoopingCall
-from twisted.python import log
 import sys
 import json
 
@@ -62,12 +61,12 @@ class Rupee:
         self.rect.centery = y
 
     def GameOver(self):
-        if self.player1.score >= 3:
+        if self.player1.score >= 15:
             self.gs.gameOverWords = "PLAYER 1 Wins! Game Over"
             self.gs.gameOverLabel = self.gs.myfont.render(self.gs.gameOverWords,1,(0,0,0))
             self.gs.game_over = 1
 
-        elif self.player2.score >= 3:
+        elif self.player2.score >= 15:
             self.gs.gameOverWords = "PLAYER 2 Wins! Game Over"
             self.gs.gameOverLabel = self.gs.myfont.render(self.gs.gameOverWords,1,(0,0,0))
             self.gs.game_over = 1
@@ -120,7 +119,6 @@ class GameSpace:
     def __init__(self):
         #Game and Graphics
         pygame.init()
-        log.startLogging(sys.stdout)
         self.myfont = pygame.font.SysFont(None, 30)
         self.myfont.set_bold(True)
 
@@ -198,6 +196,6 @@ if __name__ == "__main__":
     gs = GameSpace()
     loop = LoopingCall(gs.gameplay)
     loop.start(1/30)
-    reactor.connectTCP("newt.campus.nd.edu", 40080, DataConnectionFactory(gs))
+    reactor.connectTCP("ash.campus.nd.edu", 40080, DataConnectionFactory(gs))
     reactor.run()
     loop.stop()

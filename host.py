@@ -9,7 +9,6 @@ from twisted.internet.protocol import Protocol
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredQueue
 from twisted.internet.task import LoopingCall
-from twisted.python import log
 import sys
 import json
 import time
@@ -79,12 +78,12 @@ class Rupee:
             return
     
     def GameOver(self):
-        if self.player1.score >= 3:
+        if self.player1.score >= 15:
             self.gs.gameOverWords = "PLAYER 1 Wins! Game Over"
             self.gs.gameOverLabel = self.gs.myfont.render(self.gs.gameOverWords,1,(0,0,0))
             self.gs.game_over = 1
 
-        elif self.player2.score >= 3:
+        elif self.player2.score >= 15:
             self.gs.gameOverWords = "PLAYER 2 Wins! Game Over"
             self.gs.gameOverLabel = self.gs.myfont.render(self.gs.gameOverWords,1,(0,0,0))
             self.gs.game_over = 1
@@ -135,7 +134,6 @@ class GameSpace:
     #Game and Graphics
     def __init__(self):
         pygame.init()
-        log.startLogging(sys.stdout)
         self.myfont = pygame.font.SysFont(None, 30)
         self.myfont.set_bold(True)
 
